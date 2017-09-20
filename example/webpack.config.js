@@ -32,6 +32,10 @@ module.exports = {
             "fileName": "jsons/countries.json"
           }
         ]
+      },
+      "strings": {
+        "pre": "String starts",
+        "post": "String ends"
       }
     }),
     //lang views

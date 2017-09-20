@@ -10,9 +10,9 @@ class MergeJsonWebpackPlugin {
         this.fileDependencies = [];
         this.apply = (compiler) => {
             compiler.plugin('emit', (compilation, done) => {
-                console.log('MergetJsonsWebpackPlugin compilation started...');
                 let files = this.options.files;
                 let output = this.options.output;
+                let strings = this.options.strings || { pre: "Start", post: "End" };
                 let groupBy = output.groupBy;
                 if (files && groupBy) {
                     compilation.errors.push('MergeJsonWebpackPlugin: Specify either files (all the files to merge with filename) or groupBy to specifiy a pattern(s)' +
@@ -20,7 +20,7 @@ class MergeJsonWebpackPlugin {
                 }
                 if (files) {
                     let outputPath = output.fileName;
-                    this.processFiles(compilation, files, outputPath).then((result) => { done(); });
+                    this.processFiles(compilation, files, strings, outputPath).then((result) => { done(); });
                 }
                 else if (groupBy) {
                     if (groupBy.length == 0) {
@@ -30,11 +30,10 @@ class MergeJsonWebpackPlugin {
                         let pattern = globs.pattern;
                         let outputPath = globs.fileName;
                         this._glob(pattern).then((files) => {
-                            this.processFiles(compilation, files, outputPath).then((result) => { done(); });
+                            this.processFiles(compilation, files, strings, outputPath).then((result) => { done(); });
                         });
                     });
                 }
-                console.log('MergetJsonsWebpackPlugin compilation completed...');
             });
             compiler.plugin("after-emit", (compilation, callback) => {
                 console.log("MergetJsonsWebpackPlugin emit starts...");
@@ -47,7 +46,7 @@ class MergeJsonWebpackPlugin {
                 callback();
             });
         };
-        this.processFiles = (compilation, files, outputPath) => {
+        this.processFiles = (compilation, files, strings, outputPath) => {
             this.fileDependencies = this.fileDependencies.concat(files);
             var fileContents = files.map(this.readFile);
             let mergedContents = {};
@@ -56,7 +55,7 @@ class MergeJsonWebpackPlugin {
                 contents.forEach((content) => {
                     mergedContents = this.mergeDeep(mergedContents, content);
                 });
-                mergedContents = JSON.stringify(mergedContents);
+                mergedContents = `${strings.pre}${JSON.stringify(mergedContents)}${strings.post}`;
                 compilation.assets[outputPath] = {
                     size: function () {
                         return mergedContents.length;
